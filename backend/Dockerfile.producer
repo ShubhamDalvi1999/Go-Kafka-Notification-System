@@ -1,0 +1,16 @@
+FROM golang:1.23-alpine AS build
+WORKDIR /app
+RUN apk add --no-cache git
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/producer ./cmd/producer
+
+FROM gcr.io/distroless/base-debian12
+WORKDIR /app
+ENV GIN_MODE=release
+COPY --from=build /out/producer /app/producer
+EXPOSE 8082
+USER 65532:65532
+ENTRYPOINT ["/app/producer"]
+

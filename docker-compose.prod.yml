@@ -1,0 +1,112 @@
+services:
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 12
+
+  kafka:
+    image: docker.io/bitnami/kafka:3.5
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    ports:
+      - "9092:9092"
+    # depends_on:
+    #   - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  producer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.producer
+    env_file:
+      - backend/.env
+    environment:
+      SERVER_PORT: ":8082"
+      # DB_HOST: postgres
+      # DB_PORT: 5432
+      # DB_USER: postgres
+      # DB_PASSWORD: postgres
+      # DB_NAME: postgres
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: notifications
+      KAFKA_CONSUMER_GROUP: notifications-group
+    ports:
+      - "8082:8082"
+    depends_on:
+      # postgres:
+      #   condition: service_healthy
+      # db-migrate:
+      #   condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  consumer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.consumer
+    env_file:
+      - backend/.env
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: notifications
+      KAFKA_CONSUMER_GROUP: notifications-group
+      SERVER_PORT: ":8081"
+      # DB_HOST: postgres
+      # DB_PORT: 5432
+      # DB_USER: postgres
+      # DB_PASSWORD: postgres
+      # DB_NAME: postgres
+    ports:
+      - "8081:8081"
+    depends_on:
+      # postgres:
+      #   condition: service_healthy
+      # db-migrate:
+      #   condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+#   db-migrate:
+#     image: postgres:15-alpine
+#     environment:
+#       PGPASSWORD: postgres
+#     volumes:
+#       - ./backend/migrations:/migrations:ro
+#     entrypoint: ["sh", "-c"]
+#     command:
+#       - >-
+#         until pg_isready -h postgres -U postgres -d postgres; do echo "waiting for postgres"; sleep 2; done;
+#         psql -h postgres -U postgres -d postgres -f /migrations/001_initial_schema.sql &&
+#         psql -h postgres -U postgres -d postgres -c "INSERT INTO users (user_id, name, email, total_xp) VALUES ('0241733d-3384-483a-9fd9-5d373e5a2fe6','Demo User','demo@example.com',0) ON CONFLICT (email) DO NOTHING;"
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#     restart: "no"
+
+# volumes:
+#   postgres_data:
+#     driver: local
+
