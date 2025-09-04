@@ -1,6 +1,6 @@
-# Real-Time Notification System
+# Notification System
 
-A comprehensive real-time notification system built with **Go backend** and **React frontend**, featuring Apache Kafka for event streaming, PostgreSQL for data persistence, and WebSocket for real-time updates.
+A comprehensive notification system built with **Go backend** and **React frontend**, featuring Apache Kafka for event streaming and PostgreSQL for data persistence. Real-time push via WebSockets is not implemented; the UI fetches updates via HTTP.
 
 ## 🏗️ Project Structure
 
@@ -68,14 +68,14 @@ npm run dev
 - **Producer Service**: HTTP API for notification management with outbox pattern
 - **Consumer Service**: Kafka consumer with retry logic and dead letter queues
 - **Scheduler Service**: Automated notification generation (daily reminders, streaks)
-- **Real-time Delivery**: WebSocket support for instant notifications
+- **Delivery**: HTTP-based reads/polling (WebSocket push removed)
 - **Database Integration**: PostgreSQL with connection pooling and health checks
 
 ### Frontend Components
 - **Notification Center**: Real-time notification display and management
 - **Engagement Dashboard**: Streak tracking and progress visualization
 - **Preferences Management**: User notification settings and quiet hours
-- **Real-time Updates**: WebSocket integration with conflict resolution
+- **Updates**: HTTP fetches to refresh notifications (no WebSocket push)
 - **Responsive Design**: Mobile-first UI with Tailwind CSS
 
 ### Infrastructure
@@ -98,7 +98,8 @@ npm run dev
 - **TypeScript**: Type-safe development
 - **Vite**: Fast build tool
 - **Tailwind CSS**: Utility-first styling
-- **WebSocket**: Real-time communication
+  
+Note: WebSocket real-time communication is not currently implemented in this project.
 
 ### Infrastructure
 - **Apache Kafka**: Message broker
